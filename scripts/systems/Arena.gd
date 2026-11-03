@@ -22,6 +22,8 @@ const HEALTH_HUD_SCRIPT := preload("res://scripts/systems/HealthHUD.gd")
 
 var _projectiles: Node2D
 var _health_hud: HealthHUD
+var _guns: Array[ArenaGun] = []
+var _round_over := false
 
 
 func _ready() -> void:
@@ -49,7 +51,9 @@ func _spawn_player(
 	gun.starting_rotation_degrees = start_angle
 	gun.position = spawn_position
 	gun.shot_requested.connect(_on_shot_requested)
+	gun.eliminated.connect(_on_player_eliminated)
 	add_child(gun)
+	_guns.append(gun)
 
 
 func _on_shot_requested(gun: ArenaGun, muzzle_position: Vector2, shot_direction: Vector2) -> void:
@@ -73,7 +77,7 @@ func _on_bullet_hit(
 	impact_direction: Vector2,
 	_impact_position: Vector2
 ) -> void:
-	if not is_instance_valid(target) or not is_instance_valid(shooter):
+	if _round_over or not is_instance_valid(target) or not is_instance_valid(shooter):
 		return
 	target.receive_hit(impact_direction)
 	_health_hud.update_health(target.player_id, target.hit_count, target.gun_color)
@@ -89,6 +93,35 @@ func _on_bullet_hit(
 		target.hit_count,
 		ArenaGun.HITS_TO_ELIMINATE
 	])
+
+
+func _on_player_eliminated(gun: ArenaGun) -> void:
+	if _round_over:
+		return
+	var burst := HIT_SPARK_SCENE.instantiate() as HitSpark
+	burst.effect_color = gun.gun_color
+	burst.is_elimination = true
+	burst.global_position = gun.global_position
+	add_child(burst)
+	gun.visible = false
+	gun.collision_layer = 0
+	gun.collision_mask = 0
+	var winner_id := 2 if gun.player_id == 1 else 1
+	_end_round(winner_id)
+
+
+func _end_round(winner_id: int) -> void:
+	if _round_over:
+		return
+	_round_over = true
+	for gun in _guns:
+		if is_instance_valid(gun):
+			gun.set_round_locked(true)
+	for projectile in _projectiles.get_children():
+		if projectile is ArenaBullet:
+			projectile.cancel()
+	_health_hud.announce_winner(winner_id)
+	print("ROUND OVER: Player %d wins" % winner_id)
 
 
 func _draw() -> void:

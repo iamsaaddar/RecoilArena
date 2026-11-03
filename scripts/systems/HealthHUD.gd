@@ -14,6 +14,7 @@ var _health := {1: 0, 2: 0}
 var _colors := {1: Color("3b82f6"), 2: Color("ef4444")}
 var _animations := {1: -1.0, 2: -1.0}
 var _draw_layer: Control
+var _winner_text := ""
 
 
 func _ready() -> void:
@@ -36,6 +37,11 @@ func update_health(player_id: int, hit_count: int, player_color: Color) -> void:
 	_draw_layer.queue_redraw()
 
 
+func announce_winner(player_id: int) -> void:
+	_winner_text = "PLAYER %d WINS" % player_id
+	_draw_layer.queue_redraw()
+
+
 func _process(delta: float) -> void:
 	var needs_redraw := false
 	for player_id in [1, 2]:
@@ -53,6 +59,9 @@ func _draw_health() -> void:
 	var total_width := SEGMENT_COUNT * SEGMENT_WIDTH + (SEGMENT_COUNT - 1) * SEGMENT_GAP
 	_draw_player(1, Vector2(LEFT_MARGIN, TOP_MARGIN), font)
 	_draw_player(2, Vector2(1280.0 - LEFT_MARGIN - total_width, TOP_MARGIN), font)
+	if not _winner_text.is_empty():
+		var text_size := font.get_string_size(_winner_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 30)
+		_draw_layer.draw_string(font, Vector2((1280.0 - text_size.x) * 0.5, 54.0), _winner_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color("f8fafc"))
 
 
 func _draw_player(player_id: int, origin: Vector2, font: Font) -> void:

@@ -27,6 +27,7 @@ const MUZZLE_OFFSET := Vector2(40.0, -10.0)
 var active_bullet: Node2D
 var hit_count := 0
 var is_eliminated := false
+var _round_locked := false
 var _velocity := Vector2.ZERO
 var _angular_velocity := 0.0
 var _base_spin := 0.8
@@ -47,11 +48,15 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if not is_eliminated and not fire_action.is_empty() and Input.is_action_just_pressed(fire_action):
+	if not is_eliminated and not _round_locked and not fire_action.is_empty() and Input.is_action_just_pressed(fire_action):
 		_try_fire()
 
 
 func _physics_process(delta: float) -> void:
+	if _round_locked or is_eliminated:
+		_velocity = Vector2.ZERO
+		_angular_velocity = 0.0
+		return
 	var dt := minf(delta, 0.05)
 	_velocity.y += GRAVITY * dt
 	_velocity *= AIR_DRAG
@@ -118,6 +123,15 @@ func set_active_bullet(bullet: Node2D) -> void:
 func clear_active_bullet(bullet: Node2D) -> void:
 	if active_bullet == bullet:
 		active_bullet = null
+
+
+func set_round_locked(locked: bool) -> void:
+	_round_locked = locked
+	if locked:
+		_velocity = Vector2.ZERO
+		_angular_velocity = 0.0
+		set_process(false)
+		set_physics_process(false)
 
 
 func _ensure_fire_action() -> void:

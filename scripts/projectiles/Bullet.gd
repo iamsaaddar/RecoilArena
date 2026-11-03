@@ -76,3 +76,7 @@ func _finish() -> void:
 	_is_finished = true
 	finished.emit(self, shooter)
 	queue_free()
+
+
+func cancel() -> void:
+	_finish()
