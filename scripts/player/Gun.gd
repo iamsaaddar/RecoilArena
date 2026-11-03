@@ -3,6 +3,8 @@ class_name ArenaGun
 ## Custom-integrated gun motion copied from the HTML prototype's movement model.
 
 signal shot_requested(gun: ArenaGun, muzzle_position: Vector2, shot_direction: Vector2)
+signal hit_count_changed(gun: ArenaGun, hit_count: int, hits_to_eliminate: int)
+signal eliminated(gun: ArenaGun)
 
 @export var player_id: int = 1
 @export var fire_action: StringName = &"player_1_shoot"
@@ -13,7 +15,9 @@ const GRAVITY := 35.0
 const AIR_DRAG := 0.995
 const ANGULAR_DRAG := 0.985
 const RECOIL_FORCE := 520.0
+const HIT_RECOIL_FORCE := 340.0
 const TORQUE_FORCE := 1.8
+const HITS_TO_ELIMINATE := 3
 const GUN_RADIUS := 28.0
 const WALL_RESTITUTION := 0.8
 const ARENA_MIN := Vector2(132.0, 82.0)
@@ -21,6 +25,8 @@ const ARENA_MAX := Vector2(1148.0, 638.0)
 const MUZZLE_OFFSET := Vector2(40.0, -10.0)
 
 var active_bullet: Node2D
+var hit_count := 0
+var is_eliminated := false
 var _velocity := Vector2.ZERO
 var _angular_velocity := 0.0
 var _base_spin := 0.8
@@ -41,7 +47,7 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if not fire_action.is_empty() and Input.is_action_just_pressed(fire_action):
+	if not is_eliminated and not fire_action.is_empty() and Input.is_action_just_pressed(fire_action):
 		_try_fire()
 
 
@@ -78,7 +84,7 @@ func _resolve_arena_bounds() -> void:
 
 
 func _try_fire() -> void:
-	if is_instance_valid(active_bullet):
+	if is_eliminated or is_instance_valid(active_bullet):
 		return
 	var shot_direction := Vector2.RIGHT.rotated(global_rotation)
 	var muzzle_position := to_global(MUZZLE_OFFSET)
@@ -86,6 +92,23 @@ func _try_fire() -> void:
 	var torque_direction := 1.0 if _rng.randf() > 0.5 else -1.0
 	_angular_velocity += TORQUE_FORCE * (1.2 + _rng.randf_range(0.0, 0.6)) * torque_direction
 	shot_requested.emit(self, muzzle_position, shot_direction)
+
+
+func receive_hit(impact_direction: Vector2) -> void:
+	if is_eliminated:
+		return
+	hit_count += 1
+	var knockback_direction := impact_direction.normalized()
+	if knockback_direction.is_zero_approx():
+		knockback_direction = Vector2.UP
+	_velocity += knockback_direction * HIT_RECOIL_FORCE
+	var torque_direction := -1.0 if _rng.randf() > 0.5 else 1.0
+	_angular_velocity += torque_direction * _rng.randf_range(3.0, 4.5)
+	hit_count_changed.emit(self, hit_count, HITS_TO_ELIMINATE)
+	print("Player %d: %d/%d hits" % [player_id, hit_count, HITS_TO_ELIMINATE])
+	if hit_count >= HITS_TO_ELIMINATE:
+		is_eliminated = true
+		eliminated.emit(self)
 
 
 func set_active_bullet(bullet: Node2D) -> void:

@@ -17,6 +17,7 @@ const GRID_SPACING := 40
 
 const GUN_SCENE := preload("res://scenes/player/Gun.tscn")
 const BULLET_SCENE := preload("res://scenes/projectiles/Bullet.tscn")
+const HIT_SPARK_SCENE := preload("res://scenes/effects/HitSpark.tscn")
 
 var _projectiles: Node2D
 
@@ -62,9 +63,27 @@ func _on_bullet_finished(bullet: ArenaBullet, shooter: ArenaGun) -> void:
 		shooter.clear_active_bullet(bullet)
 
 
-func _on_bullet_hit(target: ArenaGun, shooter: ArenaGun) -> void:
+func _on_bullet_hit(
+	target: ArenaGun,
+	shooter: ArenaGun,
+	impact_direction: Vector2,
+	_impact_position: Vector2
+) -> void:
+	if not is_instance_valid(target) or not is_instance_valid(shooter):
+		return
+	target.receive_hit(impact_direction)
+	var spark := HIT_SPARK_SCENE.instantiate() as HitSpark
+	spark.effect_color = target.gun_color
+	# The reference prototype bursts particles from the gun's center, not the bullet tip.
+	spark.global_position = target.global_position
+	add_child(spark)
 	player_hit.emit(target, shooter)
-	print("Player %d hit by Player %d" % [target.player_id, shooter.player_id])
+	print("Player %d hit by Player %d (%d/%d)" % [
+		target.player_id,
+		shooter.player_id,
+		target.hit_count,
+		ArenaGun.HITS_TO_ELIMINATE
+	])
 
 
 func _draw() -> void:

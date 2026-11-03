@@ -3,7 +3,7 @@ class_name ArenaBullet
 ## Fast energy projectile with deterministic wall reflections.
 
 signal finished(bullet: ArenaBullet, shooter: ArenaGun)
-signal target_hit(target: ArenaGun, shooter: ArenaGun)
+signal target_hit(target: ArenaGun, shooter: ArenaGun, impact_direction: Vector2, impact_position: Vector2)
 
 @export var speed := 720.0
 @export var max_bounces := 5
@@ -40,7 +40,7 @@ func _physics_process(delta: float) -> void:
 	var collider := collision.get_collider()
 	if collider is ArenaGun:
 		if collider != shooter:
-			target_hit.emit(collider, shooter)
+			target_hit.emit(collider, shooter, velocity.normalized(), collision.get_position())
 			_finish()
 		return
 	if collider is StaticBody2D:
