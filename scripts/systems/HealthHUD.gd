@@ -2,6 +2,8 @@ extends CanvasLayer
 class_name HealthHUD
 ## Compact three-segment health display with a short hit-loss animation.
 
+signal play_again_requested
+
 const SEGMENT_COUNT := 3
 const SEGMENT_WIDTH := 34.0
 const SEGMENT_HEIGHT := 8.0
@@ -15,6 +17,9 @@ var _colors := {1: Color("3b82f6"), 2: Color("ef4444")}
 var _animations := {1: -1.0, 2: -1.0}
 var _draw_layer: Control
 var _winner_text := ""
+var _round_overlay: Control
+var _winner_label: Label
+var _play_again_button: Button
 
 
 func _ready() -> void:
@@ -24,6 +29,7 @@ func _ready() -> void:
 	_draw_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_draw_layer.draw.connect(_draw_health)
 	add_child(_draw_layer)
+	_create_round_overlay()
 
 
 func update_health(player_id: int, hit_count: int, player_color: Color) -> void:
@@ -39,7 +45,71 @@ func update_health(player_id: int, hit_count: int, player_color: Color) -> void:
 
 func announce_winner(player_id: int) -> void:
 	_winner_text = "PLAYER %d WINS" % player_id
+	_winner_label.text = _winner_text
+	_winner_label.show()
+	_play_again_button.text = "PLAY AGAIN"
+	_play_again_button.disabled = false
+	_play_again_button.show()
+	_round_overlay.show()
 	_draw_layer.queue_redraw()
+
+
+func show_countdown(value: String) -> void:
+	_winner_label.text = value
+	_winner_label.show()
+	_play_again_button.hide()
+	_round_overlay.show()
+
+
+func reset_health() -> void:
+	_health[1] = 0
+	_health[2] = 0
+	_animations[1] = -1.0
+	_animations[2] = -1.0
+	_winner_text = ""
+	_draw_layer.queue_redraw()
+
+
+func hide_round_overlay() -> void:
+	_round_overlay.hide()
+
+
+func _create_round_overlay() -> void:
+	_round_overlay = Control.new()
+	_round_overlay.name = "RoundOverlay"
+	_round_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_round_overlay.mouse_filter = Control.MOUSE_FILTER_PASS
+	_round_overlay.hide()
+	add_child(_round_overlay)
+
+	_winner_label = Label.new()
+	_winner_label.name = "WinnerLabel"
+	_winner_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_winner_label.offset_left = -250.0
+	_winner_label.offset_top = -76.0
+	_winner_label.offset_right = 250.0
+	_winner_label.offset_bottom = -20.0
+	_winner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_winner_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_winner_label.add_theme_font_size_override("font_size", 34)
+	_winner_label.add_theme_color_override("font_color", Color("f8fafc"))
+	_round_overlay.add_child(_winner_label)
+
+	_play_again_button = Button.new()
+	_play_again_button.name = "PlayAgainButton"
+	_play_again_button.text = "PLAY AGAIN"
+	_play_again_button.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_play_again_button.offset_left = -112.0
+	_play_again_button.offset_top = 12.0
+	_play_again_button.offset_right = 112.0
+	_play_again_button.offset_bottom = 64.0
+	_play_again_button.add_theme_font_size_override("font_size", 18)
+	_play_again_button.pressed.connect(_on_play_again_pressed)
+	_round_overlay.add_child(_play_again_button)
+
+func _on_play_again_pressed() -> void:
+	_play_again_button.disabled = true
+	play_again_requested.emit()
 
 
 func _process(delta: float) -> void:
@@ -59,11 +129,6 @@ func _draw_health() -> void:
 	var total_width := SEGMENT_COUNT * SEGMENT_WIDTH + (SEGMENT_COUNT - 1) * SEGMENT_GAP
 	_draw_player(1, Vector2(LEFT_MARGIN, TOP_MARGIN), font)
 	_draw_player(2, Vector2(1280.0 - LEFT_MARGIN - total_width, TOP_MARGIN), font)
-	if not _winner_text.is_empty():
-		var text_size := font.get_string_size(_winner_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 30)
-		_draw_layer.draw_string(font, Vector2((1280.0 - text_size.x) * 0.5, 54.0), _winner_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color("f8fafc"))
-
-
 func _draw_player(player_id: int, origin: Vector2, font: Font) -> void:
 	var color: Color = _colors[player_id]
 	var label := "PLAYER %d" % player_id

@@ -24,6 +24,7 @@ var _projectiles: Node2D
 var _health_hud: HealthHUD
 var _guns: Array[ArenaGun] = []
 var _round_over := false
+var _round_transitioning := false
 
 
 func _ready() -> void:
@@ -32,6 +33,7 @@ func _ready() -> void:
 	add_child(_projectiles)
 	_health_hud = HEALTH_HUD_SCRIPT.new() as HealthHUD
 	add_child(_health_hud)
+	_health_hud.play_again_requested.connect(_on_play_again_requested)
 	_spawn_player(1, Vector2(360.0, 360.0), 0.0, Color("3b82f6"), &"player_1_shoot")
 	_spawn_player(2, Vector2(920.0, 360.0), 180.0, Color("ef4444"), &"player_2_shoot")
 
@@ -122,6 +124,36 @@ func _end_round(winner_id: int) -> void:
 			projectile.cancel()
 	_health_hud.announce_winner(winner_id)
 	print("ROUND OVER: Player %d wins" % winner_id)
+
+
+func _on_play_again_requested() -> void:
+	if _round_over and not _round_transitioning:
+		_start_next_round()
+
+
+func _start_next_round() -> void:
+	_round_transitioning = true
+	for count in [3, 2, 1]:
+		_health_hud.show_countdown(str(count))
+		await get_tree().create_timer(0.8).timeout
+	_health_hud.show_countdown("GO!")
+	await get_tree().create_timer(0.35).timeout
+
+	for projectile in _projectiles.get_children():
+		if projectile is ArenaBullet:
+			projectile.cancel()
+	for gun in _guns:
+		if not is_instance_valid(gun):
+			continue
+		if gun.player_id == 1:
+			gun.reset_for_round(Vector2(360.0, 360.0), 0.0)
+		else:
+			gun.reset_for_round(Vector2(920.0, 360.0), 180.0)
+	_health_hud.reset_health()
+	_round_over = false
+	_round_transitioning = false
+	_health_hud.hide_round_overlay()
+	print("ROUND START")
 
 
 func _draw() -> void:

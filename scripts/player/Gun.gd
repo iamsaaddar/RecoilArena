@@ -132,6 +132,24 @@ func set_round_locked(locked: bool) -> void:
 		_angular_velocity = 0.0
 		set_process(false)
 		set_physics_process(false)
+	else:
+		set_process(true)
+		set_physics_process(true)
+
+
+func reset_for_round(spawn_position: Vector2, start_angle_degrees: float) -> void:
+	hit_count = 0
+	is_eliminated = false
+	active_bullet = null
+	_velocity = Vector2.ZERO
+	_angular_velocity = 0.0
+	global_position = spawn_position
+	rotation = deg_to_rad(start_angle_degrees)
+	visible = true
+	collision_layer = 2
+	collision_mask = 1
+	set_round_locked(false)
+	queue_redraw()
 
 
 func _ensure_fire_action() -> void:
