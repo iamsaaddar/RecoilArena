@@ -18,14 +18,18 @@ const GRID_SPACING := 40
 const GUN_SCENE := preload("res://scenes/player/Gun.tscn")
 const BULLET_SCENE := preload("res://scenes/projectiles/Bullet.tscn")
 const HIT_SPARK_SCENE := preload("res://scenes/effects/HitSpark.tscn")
+const HEALTH_HUD_SCRIPT := preload("res://scripts/systems/HealthHUD.gd")
 
 var _projectiles: Node2D
+var _health_hud: HealthHUD
 
 
 func _ready() -> void:
 	_projectiles = Node2D.new()
 	_projectiles.name = "Projectiles"
 	add_child(_projectiles)
+	_health_hud = HEALTH_HUD_SCRIPT.new() as HealthHUD
+	add_child(_health_hud)
 	_spawn_player(1, Vector2(360.0, 360.0), 0.0, Color("3b82f6"), &"player_1_shoot")
 	_spawn_player(2, Vector2(920.0, 360.0), 180.0, Color("ef4444"), &"player_2_shoot")
 
@@ -72,6 +76,7 @@ func _on_bullet_hit(
 	if not is_instance_valid(target) or not is_instance_valid(shooter):
 		return
 	target.receive_hit(impact_direction)
+	_health_hud.update_health(target.player_id, target.hit_count, target.gun_color)
 	var spark := HIT_SPARK_SCENE.instantiate() as HitSpark
 	spark.effect_color = target.gun_color
 	# The reference prototype bursts particles from the gun's center, not the bullet tip.
