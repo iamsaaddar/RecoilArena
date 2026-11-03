@@ -32,6 +32,7 @@ var _velocity := Vector2.ZERO
 var _angular_velocity := 0.0
 var _base_spin := 0.8
 var _rng := RandomNumberGenerator.new()
+var _muzzle_flash_time := 0.0
 
 
 func _ready() -> void:
@@ -47,7 +48,10 @@ func _ready() -> void:
 	add_to_group("guns")
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if _muzzle_flash_time > 0.0:
+		_muzzle_flash_time = maxf(0.0, _muzzle_flash_time - delta)
+		queue_redraw()
 	if not is_eliminated and not _round_locked and not fire_action.is_empty() and Input.is_action_just_pressed(fire_action):
 		_try_fire()
 
@@ -96,6 +100,8 @@ func _try_fire() -> void:
 	_velocity -= shot_direction * RECOIL_FORCE
 	var torque_direction := 1.0 if _rng.randf() > 0.5 else -1.0
 	_angular_velocity += TORQUE_FORCE * (1.2 + _rng.randf_range(0.0, 0.6)) * torque_direction
+	_muzzle_flash_time = 0.085
+	queue_redraw()
 	shot_requested.emit(self, muzzle_position, shot_direction)
 
 
@@ -148,6 +154,7 @@ func reset_for_round(spawn_position: Vector2, start_angle_degrees: float) -> voi
 	visible = true
 	collision_layer = 2
 	collision_mask = 1
+	_muzzle_flash_time = 0.0
 	set_round_locked(false)
 	queue_redraw()
 
@@ -178,6 +185,26 @@ func _draw() -> void:
 	_draw_gun_silhouette(Color(0.0, 0.0, 0.0, 0.4), Color(0.0, 0.0, 0.0, 0.4), Color(0.0, 0.0, 0.0, 0.4), Color(0.0, 0.0, 0.0, 0.4))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_gun_silhouette(gun_color, dark_tone, light_tone, Color.WHITE)
+	if _muzzle_flash_time > 0.0:
+		_draw_muzzle_flash()
+
+
+func _draw_muzzle_flash() -> void:
+	var progress := 1.0 - (_muzzle_flash_time / 0.085)
+	var fade := 1.0 - progress
+	var scale_factor := lerpf(0.72, 1.25, progress)
+	var origin := Vector2(40.0, -8.0)
+	draw_circle(origin, 17.0 * scale_factor, Color(gun_color, fade * 0.2))
+	draw_circle(origin, 10.0 * scale_factor, Color(1.0, 0.78, 0.35, fade * 0.72))
+	draw_colored_polygon(PackedVector2Array([
+		origin + Vector2(0.0, -5.0 * scale_factor),
+		origin + Vector2(12.0 * scale_factor, -3.0 * scale_factor),
+		origin + Vector2(25.0 * scale_factor, 0.0),
+		origin + Vector2(12.0 * scale_factor, 3.0 * scale_factor),
+		origin + Vector2(0.0, 5.0 * scale_factor),
+		origin + Vector2(5.0 * scale_factor, 0.0),
+	]), Color(1.0, 0.9, 0.62, fade))
+	draw_circle(origin + Vector2(3.0, 0.0), 4.0 * scale_factor, Color.WHITE)
 
 
 func _draw_gun_silhouette(base_color: Color, grip_color: Color, light_tone: Color, sight_color: Color) -> void:

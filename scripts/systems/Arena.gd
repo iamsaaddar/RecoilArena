@@ -19,15 +19,32 @@ const GUN_SCENE := preload("res://scenes/player/Gun.tscn")
 const BULLET_SCENE := preload("res://scenes/projectiles/Bullet.tscn")
 const HIT_SPARK_SCENE := preload("res://scenes/effects/HitSpark.tscn")
 const HEALTH_HUD_SCRIPT := preload("res://scripts/systems/HealthHUD.gd")
+const GUN_FIRE_SOUND := preload("res://assets/audio/gun_fire.wav")
+const WALL_BOUNCE_SOUND := preload("res://assets/audio/wall_bounce.wav")
+const HIT_IMPACT_SOUND := preload("res://assets/audio/hit_impact.wav")
+const ELIMINATION_SOUND := preload("res://assets/audio/elimination.wav")
+const EXPLOSION_SOUND := preload("res://assets/audio/explosion.wav")
 
 var _projectiles: Node2D
 var _health_hud: HealthHUD
+var _camera: Camera2D
 var _guns: Array[ArenaGun] = []
 var _round_over := false
 var _round_transitioning := false
+var _shake_time := 0.0
+var _shake_duration := 0.0
+var _shake_intensity := 0.0
+var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	_rng.randomize()
+	_camera = Camera2D.new()
+	_camera.name = "ArenaCamera"
+	_camera.position = Vector2(640.0, 360.0)
+	_camera.enabled = true
+	add_child(_camera)
+	_camera.make_current()
 	_projectiles = Node2D.new()
 	_projectiles.name = "Projectiles"
 	add_child(_projectiles)
@@ -36,6 +53,40 @@ func _ready() -> void:
 	_health_hud.play_again_requested.connect(_on_play_again_requested)
 	_spawn_player(1, Vector2(360.0, 360.0), 0.0, Color("3b82f6"), &"player_1_shoot")
 	_spawn_player(2, Vector2(920.0, 360.0), 180.0, Color("ef4444"), &"player_2_shoot")
+
+
+func _process(delta: float) -> void:
+	if _shake_time <= 0.0:
+		return
+	_shake_time = maxf(0.0, _shake_time - delta)
+	var fade := _shake_time / maxf(_shake_duration, 0.001)
+	_camera.offset = Vector2(
+		_rng.randf_range(-1.0, 1.0),
+		_rng.randf_range(-1.0, 1.0)
+	) * _shake_intensity * fade
+	if _shake_time <= 0.0:
+		_camera.offset = Vector2.ZERO
+		_shake_intensity = 0.0
+		_shake_duration = 0.0
+
+
+func _trigger_screen_shake(intensity: float, duration: float) -> void:
+	_shake_intensity = maxf(_shake_intensity, intensity)
+	_shake_duration = maxf(_shake_duration, duration)
+	_shake_time = maxf(_shake_time, duration)
+
+
+func _play_sound(stream: AudioStream, world_position: Vector2, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
+	var player := AudioStreamPlayer2D.new()
+	player.stream = stream
+	player.global_position = world_position
+	player.volume_db = volume_db
+	player.pitch_scale = pitch_scale
+	player.max_distance = 1800.0
+	player.attenuation = 0.8
+	player.finished.connect(player.queue_free)
+	add_child(player)
+	player.play()
 
 
 func _spawn_player(
@@ -59,13 +110,19 @@ func _spawn_player(
 
 
 func _on_shot_requested(gun: ArenaGun, muzzle_position: Vector2, shot_direction: Vector2) -> void:
+	_play_sound(GUN_FIRE_SOUND, muzzle_position, -2.0)
 	var bullet := BULLET_SCENE.instantiate() as ArenaBullet
 	bullet.bullet_color = gun.gun_color
 	bullet.finished.connect(_on_bullet_finished)
 	bullet.target_hit.connect(_on_bullet_hit)
+	bullet.wall_bounced.connect(_on_bullet_wall_bounced)
 	_projectiles.add_child(bullet)
 	bullet.setup(gun, muzzle_position, shot_direction)
 	gun.set_active_bullet(bullet)
+
+
+func _on_bullet_wall_bounced(bullet_position: Vector2) -> void:
+	_play_sound(WALL_BOUNCE_SOUND, bullet_position, -2.0)
 
 
 func _on_bullet_finished(bullet: ArenaBullet, shooter: ArenaGun) -> void:
@@ -83,6 +140,8 @@ func _on_bullet_hit(
 		return
 	target.receive_hit(impact_direction)
 	_health_hud.update_health(target.player_id, target.hit_count, target.gun_color)
+	_play_sound(HIT_IMPACT_SOUND, _impact_position, -1.5, _rng.randf_range(0.92, 1.08))
+	_trigger_screen_shake(5.5, 0.18)
 	var spark := HIT_SPARK_SCENE.instantiate() as HitSpark
 	spark.effect_color = target.gun_color
 	# The reference prototype bursts particles from the gun's center, not the bullet tip.
@@ -105,6 +164,9 @@ func _on_player_eliminated(gun: ArenaGun) -> void:
 	burst.is_elimination = true
 	burst.global_position = gun.global_position
 	add_child(burst)
+	_play_sound(ELIMINATION_SOUND, gun.global_position, -1.0, _rng.randf_range(0.96, 1.04))
+	_play_sound(EXPLOSION_SOUND, gun.global_position, -5.0, _rng.randf_range(0.94, 1.06))
+	_trigger_screen_shake(14.0, 0.42)
 	gun.visible = false
 	gun.collision_layer = 0
 	gun.collision_mask = 0

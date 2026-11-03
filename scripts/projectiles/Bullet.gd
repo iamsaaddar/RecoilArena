@@ -4,6 +4,7 @@ class_name ArenaBullet
 
 signal finished(bullet: ArenaBullet, shooter: ArenaGun)
 signal target_hit(target: ArenaGun, shooter: ArenaGun, impact_direction: Vector2, impact_position: Vector2)
+signal wall_bounced(impact_position: Vector2)
 
 @export var speed := 720.0
 @export var max_bounces := 5
@@ -50,6 +51,7 @@ func _physics_process(delta: float) -> void:
 		velocity = velocity.bounce(collision.get_normal())
 		bounce_count += 1
 		global_position += collision.get_normal() * 0.5
+		wall_bounced.emit(global_position)
 		queue_redraw()
 		return
 	_finish()
