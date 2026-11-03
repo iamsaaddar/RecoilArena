@@ -26,11 +26,13 @@ The primary objective is to calculate bounce trajectories off wall boundaries to
 ### 2.2 Combat & Ballistics
 * **Specular Reflection:** Bullets bounce off walls following exact angle-of-incidence formulas ($Angle_{In} = Angle_{Out}$).
 * **Max Bounce Count:** Bullets dissipate after a fixed number of reflections (default: 5 bounces).
-* **Owner Immunity Window:** Bullets cannot damage their launcher on initial exit, but *can* kill their launcher if reflected off a wall back into them (Self-Harm Mechanics).
-* **Instant-Kill Collisions:** A single bullet hit on an opponent's chassis triggers an elimination and awards a point.
+* **Owner Immunity:** Bullets can never damage their launcher, including after reflecting off a wall (no friendly fire).
+* **Three-Hit Elimination:** Each player can take three hits. The third hit eliminates that player and ends the round.
 
 ### 2.3 Win Condition
-* Matches run on a round-based structure. First player to reach **5 points** wins the match.
+* Each match consists of **one round only**.
+* The first player to land **three hits** eliminates their opponent and wins the match.
+* Players can choose to play again after the winner is announced. A replay starts a fresh match; wins are not accumulated across rounds.
 
 ---
 
@@ -90,9 +92,9 @@ recoil-arena/
 ### 4.2 Class Roles & Responsibilities
 
 1. **`GameManager.gd` (Autoload Singleton)**
-   * Manages global game state (`MENU`, `PLAYING`, `ROUND_OVER`, `GAME_OVER`).
-   * Tracks `p1_score` and `p2_score`.
-   * Triggers round resets and victory screens.
+   * Manages game state (`MENU`, `PLAYING`, `GAME_OVER`).
+   * Handles the single-round match ending and victory screen.
+   * Starts a fresh match when players choose to play again; no persistent match score is tracked.
 
 2. **`Gun.gd` (Extends `RigidBody2D`)**
    * Configured as a physical body with mass, linear velocity, and angular dampening.
@@ -113,9 +115,11 @@ recoil-arena/
 
 | Action | PC Keyboard (Local 1v1) | Mobile (Android Same-Device) | Gamepad (Optional) |
 | :--- | :--- | :--- | :--- |
-| **Player 1 Shoot** | `Key A` | Left Side Screen Tap / Button | `L1` or `Left Trigger` |
-| **Player 2 Shoot** | `Key L` / `Left Arrow` | Right Side Screen Tap / Button | `R1` or `Right Trigger` |
-| **Pause / Menu** | `Key ESC` | Top Bar Pause Icon | `Start Button` |
+| **Player 1 Shoot** | `Key A` | Tap anywhere on the left half | `L1` or `Left Trigger` |
+| **Player 2 Shoot** | `Key L` / `Left Arrow` | Tap anywhere on the right half | `R1` or `Right Trigger` |
+| **Pause / Menu** | `Key ESC` | Mobile pause control (planned) | `Start Button` |
+
+Mobile gameplay is landscape-oriented. The arena scales uniformly to fit the available viewport without stretching its physics or artwork; both halves accept independent simultaneous touches. No on-screen fire buttons are used.
 
 ---
 
@@ -135,7 +139,7 @@ To ensure this repository serves as a showcase piece on GitHub:
 
 ## 7. Roadmap & Future Expansion Ideas
 
-* **Phase 1 (Core Prototype):** Implement basic arena, Godot `RigidBody2D` guns, bullet bounce math, score state, and victory overlay.
+* **Phase 1 (Core Prototype):** Implement the arena, recoil-driven guns, bullet bounce math, three-hit elimination, and a single-round victory/replay flow.
 * **Phase 2 (Game Polish & Juice):** Integrate particle systems, dynamic screen shake on recoil/hits, audio SFX synthesis/files, and UI transition animations.
-* **Phase 3 (Mobile & Input Adaptation):** Add touch UI controls, optimize screen scaling for different aspect ratios, and export APKs.
+* **Phase 3 (Mobile & Input Adaptation):** Implement split-screen multi-touch firing (left half for Player 1, right half for Player 2), responsive landscape arena scaling, safe HUD placement, and Android exports.
 * **Phase 4 (Power-Ups & Map Hazards):** Add destructible obstacles, gravity wells, portal edges, and weapon pickup drops (Shotgun, Sniper, Laser Sight).

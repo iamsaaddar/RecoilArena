@@ -128,7 +128,7 @@ func _draw_health() -> void:
 	var font := ThemeDB.fallback_font
 	var total_width := SEGMENT_COUNT * SEGMENT_WIDTH + (SEGMENT_COUNT - 1) * SEGMENT_GAP
 	_draw_player(1, Vector2(LEFT_MARGIN, TOP_MARGIN), font)
-	_draw_player(2, Vector2(1280.0 - LEFT_MARGIN - total_width, TOP_MARGIN), font)
+	_draw_player(2, Vector2(_draw_layer.size.x - LEFT_MARGIN - total_width, TOP_MARGIN), font)
 func _draw_player(player_id: int, origin: Vector2, font: Font) -> void:
 	var color: Color = _colors[player_id]
 	var label := "PLAYER %d" % player_id

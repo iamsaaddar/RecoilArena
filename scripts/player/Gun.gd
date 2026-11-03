@@ -105,6 +105,12 @@ func _try_fire() -> void:
 	shot_requested.emit(self, muzzle_position, shot_direction)
 
 
+func request_touch_fire() -> void:
+	if _round_locked or is_eliminated:
+		return
+	_try_fire()
+
+
 func receive_hit(impact_direction: Vector2) -> void:
 	if is_eliminated:
 		return

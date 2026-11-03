@@ -45,6 +45,8 @@ func _ready() -> void:
 	_camera.enabled = true
 	add_child(_camera)
 	_camera.make_current()
+	get_viewport().size_changed.connect(_update_camera_zoom)
+	_update_camera_zoom()
 	_projectiles = Node2D.new()
 	_projectiles.name = "Projectiles"
 	add_child(_projectiles)
@@ -53,6 +55,30 @@ func _ready() -> void:
 	_health_hud.play_again_requested.connect(_on_play_again_requested)
 	_spawn_player(1, Vector2(360.0, 360.0), 0.0, Color("3b82f6"), &"player_1_shoot")
 	_spawn_player(2, Vector2(920.0, 360.0), 180.0, Color("ef4444"), &"player_2_shoot")
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _round_over or _round_transitioning:
+		return
+	if event is InputEventScreenTouch and event.pressed:
+		var viewport_width := get_viewport_rect().size.x
+		var player_id := 1 if event.position.x < viewport_width * 0.5 else 2
+		for gun in _guns:
+			if is_instance_valid(gun) and gun.player_id == player_id:
+				gun.request_touch_fire()
+				break
+		get_viewport().set_input_as_handled()
+
+
+func _update_camera_zoom() -> void:
+	if not is_instance_valid(_camera):
+		return
+	var viewport_size := get_viewport_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return
+	var fit_scale := minf(viewport_size.x / 1280.0, viewport_size.y / 720.0)
+	_camera.zoom = Vector2.ONE / fit_scale
+	queue_redraw()
 
 
 func _process(delta: float) -> void:
@@ -122,7 +148,7 @@ func _on_shot_requested(gun: ArenaGun, muzzle_position: Vector2, shot_direction:
 
 
 func _on_bullet_wall_bounced(bullet_position: Vector2) -> void:
-	_play_sound(WALL_BOUNCE_SOUND, bullet_position, -2.0)
+	_play_sound(WALL_BOUNCE_SOUND, bullet_position, 4.0)
 
 
 func _on_bullet_finished(bullet: ArenaBullet, shooter: ArenaGun) -> void:
@@ -219,7 +245,11 @@ func _start_next_round() -> void:
 
 
 func _draw() -> void:
-	# Full-window backdrop.
+	# Extend the backdrop into any extra space created by aspect-ratio fitting.
+	var visible_size := get_viewport_rect().size * _camera.zoom
+	var visible_rect := Rect2(Vector2(640.0, 360.0) - visible_size * 0.5, visible_size)
+	draw_rect(visible_rect, BACKGROUND_COLOR)
+	# Base 16:9 arena backdrop.
 	draw_rect(Rect2(Vector2.ZERO, Vector2(1280.0, 720.0)), BACKGROUND_COLOR)
 	# Soft cyan glow around the full 24 px wall frame.
 	draw_rect(OUTER_WALL_RECT.grow(7.0), Color(0.10, 0.78, 1.0, 0.07), false, 18.0)

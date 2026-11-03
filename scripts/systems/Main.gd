@@ -18,6 +18,7 @@ var _volume_value: Label
 
 
 func _ready() -> void:
+	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_LANDSCAPE)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_ui_layer = CanvasLayer.new()
 	_ui_layer.name = "MenuUI"
@@ -41,6 +42,9 @@ func _start_game() -> void:
 	_is_paused = false
 	_arena = ARENA_SCENE.instantiate() as Node2D
 	_arena.name = "Arena"
+	# Main must always process input so Esc can resume, but the game itself
+	# must remain pausable. Otherwise the arena inherits ALWAYS from Main.
+	_arena.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(_arena)
 
 
@@ -100,6 +104,7 @@ func _show_controls() -> void:
 	_add_control_row(panel, "PLAYER 2", "L  /  LEFT ARROW", Color("f87171"))
 	_add_control_row(panel, "PAUSE / RESUME", "ESC", ACCENT_COLOR)
 	_add_body_label(panel, "Firing launches a bullet and kicks your gun in the opposite direction.")
+	_add_body_label(panel, "Mobile: tap anywhere on the left half to fire Player 1, or the right half to fire Player 2. Both sides support simultaneous touches.")
 	_add_body_label(panel, "Land three hits to eliminate your opponent. Your own bullets can never hurt you.")
 	var back_action: Callable = Callable(self, "_show_main_menu") if _panel_return == "main" else Callable(self, "_show_pause_menu")
 	_add_menu_button(panel, "BACK", back_action, true)
@@ -181,6 +186,10 @@ func _create_panel(heading: String, subtitle: String) -> VBoxContainer:
 	panel.offset_right = 220.0
 	panel.offset_bottom = 250.0
 	panel.custom_minimum_size = Vector2(440.0, 0.0)
+	var viewport_size := get_viewport_rect().size
+	var fit_scale := minf(1.0, minf((viewport_size.x - 24.0) / 440.0, (viewport_size.y - 24.0) / 500.0))
+	panel.pivot_offset = Vector2(220.0, 250.0)
+	panel.scale = Vector2.ONE * maxf(fit_scale, 0.1)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = PANEL_COLOR
 	panel_style.border_color = Color(ACCENT_COLOR, 0.5)
