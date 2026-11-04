@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/player/Gun.gd" id="1_gun"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_gun"]
-radius = 28.0
+radius = 32.0
 
 [node name="Gun" type="RigidBody2D"]
 collision_layer = 2

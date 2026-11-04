@@ -115,6 +115,15 @@ func _play_sound(stream: AudioStream, world_position: Vector2, volume_db: float 
 	player.play()
 
 
+func _on_gun_collision(impact_strength: float, impact_position: Vector2) -> void:
+	var intensity := clampf(impact_strength / 360.0, 0.0, 1.0)
+	# Layer a weighty impact thump with the existing ricochet's short metallic tail.
+	# These are real project samples, not the artificial oscillator used previously.
+	var pitch_variation := _rng.randf_range(0.96, 1.04)
+	_play_sound(HIT_IMPACT_SOUND, impact_position, lerpf(-10.0, -3.5, intensity), 0.82 * pitch_variation)
+	_play_sound(WALL_BOUNCE_SOUND, impact_position, lerpf(-13.0, -7.0, intensity), 0.74 * pitch_variation)
+
+
 func _spawn_player(
 	player_id: int,
 	spawn_position: Vector2,
@@ -131,6 +140,7 @@ func _spawn_player(
 	gun.position = spawn_position
 	gun.shot_requested.connect(_on_shot_requested)
 	gun.eliminated.connect(_on_player_eliminated)
+	gun.gun_collision.connect(_on_gun_collision)
 	add_child(gun)
 	_guns.append(gun)
 

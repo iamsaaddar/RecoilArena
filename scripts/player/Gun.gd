@@ -5,6 +5,7 @@ class_name ArenaGun
 signal shot_requested(gun: ArenaGun, muzzle_position: Vector2, shot_direction: Vector2)
 signal hit_count_changed(gun: ArenaGun, hit_count: int, hits_to_eliminate: int)
 signal eliminated(gun: ArenaGun)
+signal gun_collision(impact_strength: float, impact_position: Vector2)
 
 @export var player_id: int = 1
 @export var fire_action: StringName = &"player_1_shoot"
@@ -18,8 +19,10 @@ const RECOIL_FORCE := 520.0
 const HIT_RECOIL_FORCE := 340.0
 const TORQUE_FORCE := 4.2
 const HITS_TO_ELIMINATE := 3
-const GUN_RADIUS := 28.0
+const GUN_RADIUS := 32.0
 const WALL_RESTITUTION := 0.8
+const GUN_RESTITUTION := 0.32
+const GUN_COLLISION_SOUND_THRESHOLD := 38.0
 const ARENA_MIN := Vector2(132.0, 82.0)
 const ARENA_MAX := Vector2(1148.0, 638.0)
 const MUZZLE_OFFSET := Vector2(40.0, -10.0)
@@ -33,6 +36,7 @@ var _angular_velocity := 0.0
 var _base_spin := 0.8
 var _rng := RandomNumberGenerator.new()
 var _muzzle_flash_time := 0.0
+var _collision_sound_cooldown := 0.0
 
 
 func _ready() -> void:
@@ -57,6 +61,7 @@ func _process(delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_collision_sound_cooldown = maxf(0.0, _collision_sound_cooldown - delta)
 	if _round_locked or is_eliminated:
 		_velocity = Vector2.ZERO
 		_angular_velocity = 0.0
@@ -70,6 +75,10 @@ func _physics_process(delta: float) -> void:
 		_angular_velocity += _base_spin * dt * 2.0
 	global_position += _velocity * dt
 	_resolve_arena_bounds()
+	# Player 2 is spawned after Player 1, so both guns have completed their
+	# movement step before this single shared collision pass runs.
+	if player_id == 2:
+		_resolve_opponent_collision()
 	queue_redraw()
 
 
@@ -90,6 +99,44 @@ func _resolve_arena_bounds() -> void:
 		global_position.y = ARENA_MAX.y - GUN_RADIUS
 		_velocity.y = -absf(_velocity.y) * WALL_RESTITUTION
 		_angular_velocity *= -0.8
+
+
+func _resolve_opponent_collision() -> void:
+	for other in get_tree().get_nodes_in_group("guns"):
+		if other == self or not other is ArenaGun:
+			continue
+		var opponent := other as ArenaGun
+		if opponent.is_eliminated or opponent._round_locked:
+			continue
+		var separation := opponent.global_position - global_position
+		var distance_squared := separation.length_squared()
+		var minimum_distance := GUN_RADIUS * 2.0
+		if distance_squared >= minimum_distance * minimum_distance:
+			continue
+		var distance := sqrt(distance_squared)
+		var collision_normal := separation / distance if distance > 0.001 else Vector2.RIGHT
+		var overlap := minimum_distance - distance
+		# Split positional correction evenly so neither player gets priority.
+		global_position -= collision_normal * (overlap * 0.5)
+		opponent.global_position += collision_normal * (overlap * 0.5)
+		var relative_velocity := opponent._velocity - _velocity
+		var closing_speed := relative_velocity.dot(collision_normal)
+		if closing_speed >= 0.0:
+			continue
+		# Equal-mass impulse with restrained bounce keeps collisions weighty.
+		var impulse_strength := -(1.0 + GUN_RESTITUTION) * closing_speed * 0.5
+		var impulse := collision_normal * impulse_strength
+		_velocity -= impulse
+		opponent._velocity += impulse
+		# A small angular kick makes off-center-looking impacts feel less rigid.
+		var tangential_speed := relative_velocity.dot(collision_normal.rotated(PI * 0.5))
+		var angular_kick := clampf(tangential_speed * 0.006, -1.4, 1.4)
+		_angular_velocity += angular_kick
+		opponent._angular_velocity += angular_kick
+		var impact_strength := -closing_speed
+		if impact_strength >= GUN_COLLISION_SOUND_THRESHOLD and _collision_sound_cooldown <= 0.0:
+			_collision_sound_cooldown = 0.16
+			gun_collision.emit(impact_strength, global_position + collision_normal * GUN_RADIUS)
 
 
 func _try_fire() -> void:
@@ -161,6 +208,7 @@ func reset_for_round(spawn_position: Vector2, start_angle_degrees: float) -> voi
 	collision_layer = 2
 	collision_mask = 1
 	_muzzle_flash_time = 0.0
+	_collision_sound_cooldown = 0.0
 	set_round_locked(false)
 	queue_redraw()
 
