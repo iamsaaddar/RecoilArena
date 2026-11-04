@@ -1,8 +1,6 @@
 extends Node2D
 ## Arena backdrop, player spawns, and projectile ownership.
 
-signal player_hit(target: ArenaGun, shooter: ArenaGun)
-
 const BACKGROUND_COLOR := Color("1e2029")
 const ARENA_COLOR := Color("191b23")
 const GRID_COLOR := Color("262936")
@@ -176,7 +174,6 @@ func _on_bullet_hit(
 	# The reference prototype bursts particles from the gun's center, not the bullet tip.
 	spark.global_position = target.global_position
 	add_child(spark)
-	player_hit.emit(target, shooter)
 	print("Player %d hit by Player %d (%d/%d)" % [
 		target.player_id,
 		shooter.player_id,

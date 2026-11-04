@@ -100,7 +100,6 @@ func _show_main_menu() -> void:
 	_add_menu_button(panel, "CONTROLS", _show_controls_from_main)
 	_add_menu_button(panel, "SETTINGS", _show_settings_from_main)
 	_add_menu_button(panel, "QUIT GAME", _quit_game)
-	_set_overlay(panel)
 
 
 func _show_pause_menu() -> void:
@@ -115,7 +114,6 @@ func _show_pause_menu() -> void:
 	_add_menu_button(panel, "CONTROLS", _show_controls_from_pause)
 	_add_menu_button(panel, "SETTINGS", _show_settings_from_pause)
 	_add_menu_button(panel, "MAIN MENU", _return_to_main_menu)
-	_set_overlay(panel)
 
 
 func _resume_game() -> void:
@@ -146,7 +144,6 @@ func _show_controls() -> void:
 	_add_body_label(panel, "Land three hits to eliminate your opponent. Your own bullets can never hurt you.")
 	var back_action: Callable = Callable(self, "_show_main_menu") if _panel_return == "main" else Callable(self, "_show_pause_menu")
 	_add_menu_button(panel, "BACK", back_action, true)
-	_set_overlay(panel)
 
 
 func _show_settings_from_main() -> void:
@@ -191,7 +188,6 @@ func _show_settings() -> void:
 	_add_body_label(panel, "Volume changes apply immediately to all game audio.")
 	var back_action: Callable = Callable(self, "_show_main_menu") if _panel_return == "main" else Callable(self, "_show_pause_menu")
 	_add_menu_button(panel, "BACK", back_action, true)
-	_set_overlay(panel)
 
 
 func _on_master_volume_changed(value: float) -> void:
@@ -259,18 +255,9 @@ func _create_panel(heading: String, subtitle: String) -> VBoxContainer:
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(0.0, 8.0)
 	content.add_child(spacer)
-	return _register_overlay(overlay, content)
-
-
-func _register_overlay(overlay: Control, content: VBoxContainer) -> VBoxContainer:
 	_active_overlay = overlay
 	_ui_layer.add_child(overlay)
 	return content
-
-
-func _set_overlay(_content: VBoxContainer) -> void:
-	if is_instance_valid(_active_overlay):
-		_active_overlay.show()
 
 
 func _add_menu_button(parent: VBoxContainer, label_text: String, callback: Callable, primary := false) -> void:

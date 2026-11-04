@@ -1,6 +1,6 @@
 extends CharacterBody2D
 class_name ArenaBullet
-## Fast energy projectile that disappears after its first wall bounce.
+## Fast projectile that disappears after its second wall contact.
 
 signal target_hit(target: ArenaGun, shooter: ArenaGun, impact_direction: Vector2, impact_position: Vector2)
 signal wall_bounced(impact_position: Vector2)

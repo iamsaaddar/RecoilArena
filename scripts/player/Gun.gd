@@ -1,9 +1,8 @@
 extends RigidBody2D
 class_name ArenaGun
-## Custom-integrated gun motion copied from the HTML prototype's movement model.
+## Recoil-driven movement, collisions and firing for one player.
 
 signal shot_requested(gun: ArenaGun, muzzle_position: Vector2, shot_direction: Vector2)
-signal hit_count_changed(gun: ArenaGun, hit_count: int, hits_to_eliminate: int)
 signal eliminated(gun: ArenaGun)
 signal gun_collision(impact_strength: float, impact_position: Vector2)
 
@@ -167,7 +166,6 @@ func receive_hit(impact_direction: Vector2) -> void:
 	_velocity += knockback_direction * HIT_RECOIL_FORCE
 	var torque_direction := -1.0 if _rng.randf() > 0.5 else 1.0
 	_angular_velocity += torque_direction * _rng.randf_range(3.0, 4.5)
-	hit_count_changed.emit(self, hit_count, HITS_TO_ELIMINATE)
 	print("Player %d: %d/%d hits" % [player_id, hit_count, HITS_TO_ELIMINATE])
 	if hit_count >= HITS_TO_ELIMINATE:
 		is_eliminated = true

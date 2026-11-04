@@ -14,7 +14,6 @@ var _health := {1: 0, 2: 0}
 var _colors := {1: Color("3b82f6"), 2: Color("ef4444")}
 var _animations := {1: -1.0, 2: -1.0}
 var _draw_layer: Control
-var _winner_text := ""
 var _round_overlay: Control
 var _winner_label: Label
 var _play_again_button: Button
@@ -42,8 +41,7 @@ func update_health(player_id: int, hit_count: int, player_color: Color) -> void:
 
 
 func announce_winner(player_id: int) -> void:
-	_winner_text = "PLAYER %d WINS" % player_id
-	_winner_label.text = _winner_text
+	_winner_label.text = "PLAYER %d WINS" % player_id
 	_winner_label.show()
 	_play_again_button.text = "PLAY AGAIN"
 	_play_again_button.disabled = false
@@ -64,7 +62,6 @@ func reset_health() -> void:
 	_health[2] = 0
 	_animations[1] = -1.0
 	_animations[2] = -1.0
-	_winner_text = ""
 	_draw_layer.queue_redraw()
 
 
@@ -112,12 +109,12 @@ func _on_play_again_pressed() -> void:
 
 func _process(delta: float) -> void:
 	var needs_redraw := false
-	for player_id in [1, 2]:
+	for player_id in range(1, 3):
 		if _animations[player_id] >= 0.0:
 			_animations[player_id] += delta
+			needs_redraw = true
 			if _animations[player_id] >= ANIMATION_DURATION:
 				_animations[player_id] = -1.0
-			needs_redraw = true
 	if needs_redraw:
 		_draw_layer.queue_redraw()
 
