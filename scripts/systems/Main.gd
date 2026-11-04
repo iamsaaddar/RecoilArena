@@ -15,6 +15,7 @@ var _active_overlay: Control
 var _is_paused := false
 var _panel_return := "main"
 var _volume_value: Label
+var _pause_button: Button
 
 
 func _ready() -> void:
@@ -24,6 +25,7 @@ func _ready() -> void:
 	_ui_layer.name = "MenuUI"
 	_ui_layer.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(_ui_layer)
+	_create_gameplay_pause_button()
 	_show_main_menu()
 
 
@@ -36,8 +38,41 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+func _create_gameplay_pause_button() -> void:
+	_pause_button = Button.new()
+	_pause_button.name = "GameplayPauseButton"
+	_pause_button.text = "Ⅱ"
+	_pause_button.tooltip_text = "Pause game"
+	_pause_button.focus_mode = Control.FOCUS_NONE
+	_pause_button.custom_minimum_size = Vector2(46.0, 28.0)
+	_pause_button.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_pause_button.position = Vector2(-23.0, 10.0)
+	_pause_button.size = Vector2(46.0, 28.0)
+	_pause_button.add_theme_font_size_override("font_size", 16)
+	_pause_button.add_theme_color_override("font_color", ACCENT_COLOR)
+	_pause_button.add_theme_color_override("font_hover_color", Color.WHITE)
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.0, 0.0, 0.0, 0.0)
+	normal.border_color = Color(ACCENT_COLOR, 0.82)
+	normal.set_border_width_all(1)
+	normal.set_corner_radius_all(6)
+	normal.content_margin_left = 4.0
+	normal.content_margin_right = 4.0
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color(ACCENT_COLOR, 0.10)
+	hover.border_color = Color(ACCENT_COLOR, 1.0)
+	var pressed := hover.duplicate() as StyleBoxFlat
+	pressed.bg_color = Color(ACCENT_COLOR, 0.18)
+	_pause_button.add_theme_stylebox_override("normal", normal)
+	_pause_button.add_theme_stylebox_override("hover", hover)
+	_pause_button.add_theme_stylebox_override("pressed", pressed)
+	_pause_button.pressed.connect(_show_pause_menu)
+	_ui_layer.add_child(_pause_button)
+	_pause_button.hide()
+
 func _start_game() -> void:
 	_clear_overlay()
+	_pause_button.show()
 	get_tree().paused = false
 	_is_paused = false
 	_arena = ARENA_SCENE.instantiate() as Node2D
@@ -49,6 +84,7 @@ func _start_game() -> void:
 
 
 func _return_to_main_menu() -> void:
+	_pause_button.hide()
 	get_tree().paused = false
 	_is_paused = false
 	if is_instance_valid(_arena):
@@ -70,6 +106,7 @@ func _show_main_menu() -> void:
 func _show_pause_menu() -> void:
 	if not is_instance_valid(_arena):
 		return
+	_pause_button.hide()
 	_is_paused = true
 	get_tree().paused = true
 	_clear_overlay()
@@ -83,6 +120,7 @@ func _show_pause_menu() -> void:
 
 func _resume_game() -> void:
 	_clear_overlay()
+	_pause_button.show()
 	_is_paused = false
 	get_tree().paused = false
 

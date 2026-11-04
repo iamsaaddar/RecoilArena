@@ -9,8 +9,6 @@ const SEGMENT_WIDTH := 34.0
 const SEGMENT_HEIGHT := 8.0
 const SEGMENT_GAP := 8.0
 const ANIMATION_DURATION := 0.32
-const LEFT_MARGIN := 52.0
-const TOP_MARGIN := 8.0
 
 var _health := {1: 0, 2: 0}
 var _colors := {1: Color("3b82f6"), 2: Color("ef4444")}
@@ -127,8 +125,16 @@ func _process(delta: float) -> void:
 func _draw_health() -> void:
 	var font := ThemeDB.fallback_font
 	var total_width := SEGMENT_COUNT * SEGMENT_WIDTH + (SEGMENT_COUNT - 1) * SEGMENT_GAP
-	_draw_player(1, Vector2(LEFT_MARGIN, TOP_MARGIN), font)
-	_draw_player(2, Vector2(_draw_layer.size.x - LEFT_MARGIN - total_width, TOP_MARGIN), font)
+	var viewport_size := _draw_layer.size
+	var is_mobile_layout := OS.get_name() == "Android" or OS.get_name() == "iOS"
+	var horizontal_margin := 52.0
+	var top_margin := 27.0
+	if is_mobile_layout:
+		horizontal_margin = clampf(viewport_size.x * 0.04, 28.0, 52.0)
+		top_margin = clampf(viewport_size.y * 0.035, 24.0, 30.0)
+	_draw_player(1, Vector2(horizontal_margin, top_margin), font)
+	_draw_player(2, Vector2(viewport_size.x - horizontal_margin - total_width, top_margin), font)
+
 func _draw_player(player_id: int, origin: Vector2, font: Font) -> void:
 	var color: Color = _colors[player_id]
 	var label := "PLAYER %d" % player_id
