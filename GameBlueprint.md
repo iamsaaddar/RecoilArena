@@ -139,7 +139,16 @@ To ensure this repository serves as a showcase piece on GitHub:
 
 ## 7. Roadmap & Future Expansion Ideas
 
-* **Phase 1 (Core Prototype):** Implement the arena, recoil-driven guns, bullet bounce math, three-hit elimination, and a single-round victory/replay flow.
-* **Phase 2 (Game Polish & Juice):** Integrate particle systems, dynamic screen shake on recoil/hits, audio SFX synthesis/files, and UI transition animations.
-* **Phase 3 (Mobile & Input Adaptation):** Implement split-screen multi-touch firing (left half for Player 1, right half for Player 2), responsive landscape arena scaling, safe HUD placement, and Android exports.
-* **Phase 4 (Power-Ups & Map Hazards):** Add destructible obstacles, gravity wells, portal edges, and weapon pickup drops (Shotgun, Sniper, Laser Sight).
+### Current Development Checklist
+
+* [x] **Priority 1 — Gameplay Reliability:** Verify projectile boundary handling, wall/corner reflections, bounce limit, bullet cleanup, firing availability, hit registration, owner immunity, elimination, and replay.
+* [x] **Priority 2 — Mobile UI & Controls:** Verify HUD placement, pause control, landscape layout, simultaneous touch input, and mobile pause/resume/replay flows.
+* [ ] **Priority 3 — Final Gameplay Polish:** Review and tune recoil, gravity, rotational drift, projectile speed, wall response, audio levels, effects, and the complete match experience.
+* [ ] **Priority 4 — Release Preparation:** Prepare platform builds, test exports, create the README and gameplay showcase, and finalize release automation.
+
+### Project Phases
+
+* **Phase 1 (Core Prototype):** Implement the arena, recoil-driven guns, bullet bounce math, three-hit elimination, and a single-round victory/replay flow. **Implemented; reliability checks verified under Priority 1.**
+* **Phase 2 (Game Polish & Juice):** Integrate particle systems, dynamic screen shake on recoil/hits, audio SFX synthesis/files, and UI transition animations. **Implemented; mobile-facing UI and controls verified under Priority 2.**
+* **Phase 3 (Mobile & Input Adaptation):** Implement split-screen multi-touch firing (left half for Player 1, right half for Player 2), responsive landscape arena scaling, safe HUD placement, and Android exports. **Core mobile interaction and layout verified; export/release preparation remains tracked separately.**
+* **Phase 4 (Power-Ups & Map Hazards):** Add destructible obstacles, gravity wells, portal edges, and weapon pickup drops (Shotgun, Sniper, Laser Sight). **Future expansion; not required for the initial release.**

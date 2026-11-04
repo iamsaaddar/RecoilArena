@@ -13,6 +13,8 @@ signal wall_bounced(impact_position: Vector2)
 const RADIUS := 5.0
 const TRAIL_POINTS := 10
 const TRAIL_WIDTH := RADIUS * 1.5
+const ARENA_MIN := Vector2(132.0, 82.0)
+const ARENA_MAX := Vector2(1148.0, 638.0)
 
 var shooter: ArenaGun
 var bounce_count := 0
@@ -37,6 +39,7 @@ func _physics_process(delta: float) -> void:
 	var collision := move_and_collide(velocity * delta)
 	queue_redraw()
 	if collision == null:
+		_resolve_arena_bounds()
 		return
 	var collider := collision.get_collider()
 	if collider is ArenaGun:
@@ -55,6 +58,37 @@ func _physics_process(delta: float) -> void:
 		queue_redraw()
 		return
 	_finish()
+
+
+func _resolve_arena_bounds() -> void:
+	# Keep the projectile's full collision circle inside the arena's inner wall edges.
+	var min_position := ARENA_MIN + Vector2.ONE * RADIUS
+	var max_position := ARENA_MAX - Vector2.ONE * RADIUS
+	var hit_horizontal_bound := global_position.x < min_position.x or global_position.x > max_position.x
+	var hit_vertical_bound := global_position.y < min_position.y or global_position.y > max_position.y
+	if not hit_horizontal_bound and not hit_vertical_bound:
+		return
+	if bounce_count >= max_bounces:
+		_finish()
+		return
+
+	# Clamp the missed collision to the wall and reflect the matching velocity axis.
+	if global_position.x < min_position.x:
+		global_position.x = min_position.x
+		velocity.x = absf(velocity.x)
+	elif global_position.x > max_position.x:
+		global_position.x = max_position.x
+		velocity.x = -absf(velocity.x)
+	if global_position.y < min_position.y:
+		global_position.y = min_position.y
+		velocity.y = absf(velocity.y)
+	elif global_position.y > max_position.y:
+		global_position.y = max_position.y
+		velocity.y = -absf(velocity.y)
+
+	bounce_count += 1
+	wall_bounced.emit(global_position)
+	queue_redraw()
 
 
 func _draw() -> void:
