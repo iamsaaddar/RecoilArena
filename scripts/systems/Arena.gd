@@ -149,21 +149,14 @@ func _on_shot_requested(gun: ArenaGun, muzzle_position: Vector2, shot_direction:
 	_play_sound(GUN_FIRE_SOUND, muzzle_position, -2.0)
 	var bullet := BULLET_SCENE.instantiate() as ArenaBullet
 	bullet.bullet_color = gun.gun_color
-	bullet.finished.connect(_on_bullet_finished)
 	bullet.target_hit.connect(_on_bullet_hit)
 	bullet.wall_bounced.connect(_on_bullet_wall_bounced)
 	_projectiles.add_child(bullet)
 	bullet.setup(gun, muzzle_position, shot_direction)
-	gun.set_active_bullet(bullet)
 
 
 func _on_bullet_wall_bounced(bullet_position: Vector2) -> void:
 	_play_sound(WALL_BOUNCE_SOUND, bullet_position, 4.0)
-
-
-func _on_bullet_finished(bullet: ArenaBullet, shooter: ArenaGun) -> void:
-	if is_instance_valid(shooter):
-		shooter.clear_active_bullet(bullet)
 
 
 func _on_bullet_hit(

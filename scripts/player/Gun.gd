@@ -27,7 +27,6 @@ const ARENA_MIN := Vector2(132.0, 82.0)
 const ARENA_MAX := Vector2(1148.0, 638.0)
 const MUZZLE_OFFSET := Vector2(40.0, -10.0)
 
-var active_bullet: Node2D
 var hit_count := 0
 var is_eliminated := false
 var _round_locked := false
@@ -140,7 +139,7 @@ func _resolve_opponent_collision() -> void:
 
 
 func _try_fire() -> void:
-	if is_eliminated or is_instance_valid(active_bullet):
+	if is_eliminated or _round_locked:
 		return
 	var shot_direction := Vector2.RIGHT.rotated(global_rotation)
 	var muzzle_position := to_global(MUZZLE_OFFSET)
@@ -175,15 +174,6 @@ func receive_hit(impact_direction: Vector2) -> void:
 		eliminated.emit(self)
 
 
-func set_active_bullet(bullet: Node2D) -> void:
-	active_bullet = bullet
-
-
-func clear_active_bullet(bullet: Node2D) -> void:
-	if active_bullet == bullet:
-		active_bullet = null
-
-
 func set_round_locked(locked: bool) -> void:
 	_round_locked = locked
 	if locked:
@@ -199,7 +189,6 @@ func set_round_locked(locked: bool) -> void:
 func reset_for_round(spawn_position: Vector2, start_angle_degrees: float) -> void:
 	hit_count = 0
 	is_eliminated = false
-	active_bullet = null
 	_velocity = Vector2.ZERO
 	_angular_velocity = 0.0
 	global_position = spawn_position

@@ -2,7 +2,6 @@ extends CharacterBody2D
 class_name ArenaBullet
 ## Fast energy projectile with deterministic wall reflections.
 
-signal finished(bullet: ArenaBullet, shooter: ArenaGun)
 signal target_hit(target: ArenaGun, shooter: ArenaGun, impact_direction: Vector2, impact_position: Vector2)
 signal wall_bounced(impact_position: Vector2)
 
@@ -110,7 +109,6 @@ func _finish() -> void:
 	if _is_finished:
 		return
 	_is_finished = true
-	finished.emit(self, shooter)
 	queue_free()
 
 
