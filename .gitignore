@@ -1,4 +1,27 @@
-# Godot 4+ specific ignores
+# Godot generated files
 .godot/
-/android/
+
+# Exported builds
+/builds/
+/Windows/
+/Android/
+/RecoilArena.exe
+/RecoilArena.pck
 /RecoilArena.apk
+
+# Android generated files
+/android/build/
+
+# IDE and editor files
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.log
