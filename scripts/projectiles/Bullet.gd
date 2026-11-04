@@ -1,12 +1,11 @@
 extends CharacterBody2D
 class_name ArenaBullet
-## Fast energy projectile with deterministic wall reflections.
+## Fast energy projectile that disappears after its first wall bounce.
 
 signal target_hit(target: ArenaGun, shooter: ArenaGun, impact_direction: Vector2, impact_position: Vector2)
 signal wall_bounced(impact_position: Vector2)
 
 @export var speed := 720.0
-@export var max_bounces := 5
 @export var bullet_color := Color("3b82f6")
 
 const RADIUS := 5.0
@@ -16,7 +15,7 @@ const ARENA_MIN := Vector2(132.0, 82.0)
 const ARENA_MAX := Vector2(1148.0, 638.0)
 
 var shooter: ArenaGun
-var bounce_count := 0
+var _has_bounced := false
 var _is_finished := false
 var _trail_positions: Array[Vector2] = []
 
@@ -47,11 +46,11 @@ func _physics_process(delta: float) -> void:
 			_finish()
 		return
 	if collider is StaticBody2D:
-		if bounce_count >= max_bounces:
+		if _has_bounced:
 			_finish()
 			return
 		velocity = velocity.bounce(collision.get_normal())
-		bounce_count += 1
+		_has_bounced = true
 		global_position += collision.get_normal() * 0.5
 		wall_bounced.emit(global_position)
 		queue_redraw()
@@ -67,7 +66,7 @@ func _resolve_arena_bounds() -> void:
 	var hit_vertical_bound := global_position.y < min_position.y or global_position.y > max_position.y
 	if not hit_horizontal_bound and not hit_vertical_bound:
 		return
-	if bounce_count >= max_bounces:
+	if _has_bounced:
 		_finish()
 		return
 
@@ -85,7 +84,7 @@ func _resolve_arena_bounds() -> void:
 		global_position.y = max_position.y
 		velocity.y = -absf(velocity.y)
 
-	bounce_count += 1
+	_has_bounced = true
 	wall_bounced.emit(global_position)
 	queue_redraw()
 
