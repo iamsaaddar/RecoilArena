@@ -71,7 +71,7 @@ func _create_gameplay_pause_button() -> void:
 	_ui_layer.add_child(_pause_button)
 	_pause_button.hide()
 
-func _start_game(single_player: bool = false) -> void:
+func _start_game(single_player: bool = false, cpu_difficulty: int = CPUController.DIFFICULTY_NORMAL) -> void:
 	_clear_overlay()
 	_pause_button.show()
 	get_tree().paused = false
@@ -80,6 +80,8 @@ func _start_game(single_player: bool = false) -> void:
 	_arena = ARENA_SCENE.instantiate() as Node2D
 	_arena.name = "Arena"
 	_arena.set("single_player_mode", single_player)
+	if single_player:
+		_arena.set("cpu_difficulty", cpu_difficulty)
 	# Main must always process input so Esc can resume, but the game itself
 	# must remain pausable. Otherwise the arena inherits ALWAYS from Main.
 	_arena.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -108,9 +110,18 @@ func _show_main_menu() -> void:
 func _show_mode_select() -> void:
 	_clear_overlay()
 	var panel := _create_panel("CHOOSE YOUR MODE", "ONE PLAYER OR TWO. THE RECOIL DOESN'T CARE.")
-	_add_menu_button(panel, "SINGLE PLAYER  ·  VS CPU", Callable(self, "_start_game").bind(true), true)
+	_add_menu_button(panel, "SINGLE PLAYER  ·  VS CPU", _show_difficulty_select, true)
 	_add_menu_button(panel, "2 PLAYERS  ·  LOCAL", Callable(self, "_start_game").bind(false))
 	_add_menu_button(panel, "BACK", _show_main_menu)
+
+
+func _show_difficulty_select() -> void:
+	_clear_overlay()
+	var panel := _create_panel("CPU DIFFICULTY", "CHOOSE HOW HARD THE RED GUN FIGHTS BACK.")
+	_add_menu_button(panel, "EASY  ·  MORE TIME TO REACT", Callable(self, "_start_game").bind(true, CPUController.DIFFICULTY_EASY), true)
+	_add_menu_button(panel, "NORMAL  ·  BALANCED", Callable(self, "_start_game").bind(true, CPUController.DIFFICULTY_NORMAL))
+	_add_menu_button(panel, "HARD  ·  SHARPER AIM & DODGING", Callable(self, "_start_game").bind(true, CPUController.DIFFICULTY_HARD))
+	_add_menu_button(panel, "BACK", _show_mode_select)
 
 
 func _show_pause_menu() -> void:

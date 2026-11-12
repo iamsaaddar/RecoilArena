@@ -30,6 +30,7 @@ var _camera: Camera2D
 var _guns: Array[ArenaGun] = []
 ## Set before adding this Arena to the scene tree to replace Player 2 with the CPU.
 @export var single_player_mode := false
+@export_range(0, 2, 1) var cpu_difficulty := CPUController.DIFFICULTY_NORMAL
 var _cpu_controller: CPUController
 var _round_over := false
 var _round_transitioning := false
@@ -160,6 +161,7 @@ func _start_cpu_opponent() -> void:
 	_cpu_controller = CPU_CONTROLLER_SCRIPT.new() as CPUController
 	_cpu_controller.name = "CPUController"
 	add_child(_cpu_controller)
+	_cpu_controller.set_difficulty(cpu_difficulty)
 	_cpu_controller.setup(cpu_gun, human_gun, _projectiles)
 
 

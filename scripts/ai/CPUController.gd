@@ -3,6 +3,10 @@ class_name CPUController
 ## Basic CPU opponent controller. It only chooses when and where to aim/fire;
 ## ArenaGun remains responsible for rotation, recoil, muzzle flash and projectiles.
 
+const DIFFICULTY_EASY := 0
+const DIFFICULTY_NORMAL := 1
+const DIFFICULTY_HARD := 2
+
 @export_range(0.1, 2.0, 0.05) var reaction_delay := 0.35
 @export_range(0.1, 4.0, 0.05) var minimum_fire_interval := 0.95
 @export_range(0.1, 5.0, 0.05) var maximum_fire_interval := 1.45
@@ -21,6 +25,42 @@ var _reaction_timer := 0.0
 var _fire_timer := 0.0
 var _dodge_timer := 0.0
 var _controller_active := true
+
+
+## Apply a named preset to the existing decision timings and accuracy values.
+func set_difficulty(difficulty: int) -> void:
+	match clampi(difficulty, DIFFICULTY_EASY, DIFFICULTY_HARD):
+		DIFFICULTY_EASY:
+			reaction_delay = 0.65
+			minimum_fire_interval = 1.45
+			maximum_fire_interval = 1.95
+			aim_error_degrees = 13.0
+			fire_alignment_tolerance = 8.0
+			dodge_cooldown = 1.1
+			dodge_prediction_time = 0.5
+			dodge_detection_radius = 55.0
+			dodge_impulse = 300.0
+		DIFFICULTY_NORMAL:
+			reaction_delay = 0.35
+			minimum_fire_interval = 0.95
+			maximum_fire_interval = 1.45
+			aim_error_degrees = 7.0
+			fire_alignment_tolerance = 13.0
+			dodge_cooldown = 0.7
+			dodge_prediction_time = 0.7
+			dodge_detection_radius = 70.0
+			dodge_impulse = 380.0
+		DIFFICULTY_HARD:
+			reaction_delay = 0.15
+			minimum_fire_interval = 0.55
+			maximum_fire_interval = 0.85
+			aim_error_degrees = 2.5
+			fire_alignment_tolerance = 18.0
+			dodge_cooldown = 0.4
+			dodge_prediction_time = 0.9
+			dodge_detection_radius = 95.0
+			dodge_impulse = 440.0
+	_fire_timer = _get_next_fire_interval()
 
 
 func _ready() -> void:
