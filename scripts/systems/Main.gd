@@ -16,6 +16,7 @@ var _is_paused := false
 var _panel_return := "main"
 var _volume_value: Label
 var _pause_button: Button
+var _active_single_player := false
 
 
 func _ready() -> void:
@@ -70,13 +71,15 @@ func _create_gameplay_pause_button() -> void:
 	_ui_layer.add_child(_pause_button)
 	_pause_button.hide()
 
-func _start_game() -> void:
+func _start_game(single_player: bool = false) -> void:
 	_clear_overlay()
 	_pause_button.show()
 	get_tree().paused = false
 	_is_paused = false
+	_active_single_player = single_player
 	_arena = ARENA_SCENE.instantiate() as Node2D
 	_arena.name = "Arena"
+	_arena.set("single_player_mode", single_player)
 	# Main must always process input so Esc can resume, but the game itself
 	# must remain pausable. Otherwise the arena inherits ALWAYS from Main.
 	_arena.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -96,10 +99,18 @@ func _return_to_main_menu() -> void:
 func _show_main_menu() -> void:
 	_clear_overlay()
 	var panel := _create_panel("RECOIL ARENA", "A DUEL OF AIM, ANGLES & RECOIL")
-	_add_menu_button(panel, "PLAY", _start_game, true)
+	_add_menu_button(panel, "PLAY", _show_mode_select, true)
 	_add_menu_button(panel, "CONTROLS", _show_controls_from_main)
 	_add_menu_button(panel, "SETTINGS", _show_settings_from_main)
 	_add_menu_button(panel, "QUIT GAME", _quit_game)
+
+
+func _show_mode_select() -> void:
+	_clear_overlay()
+	var panel := _create_panel("CHOOSE YOUR MODE", "ONE PLAYER OR TWO. THE RECOIL DOESN'T CARE.")
+	_add_menu_button(panel, "SINGLE PLAYER  ·  VS CPU", Callable(self, "_start_game").bind(true), true)
+	_add_menu_button(panel, "2 PLAYERS  ·  LOCAL", Callable(self, "_start_game").bind(false))
+	_add_menu_button(panel, "BACK", _show_main_menu)
 
 
 func _show_pause_menu() -> void:
@@ -135,12 +146,20 @@ func _show_controls_from_pause() -> void:
 
 func _show_controls() -> void:
 	_clear_overlay()
-	var panel := _create_panel("CONTROLS", "TWO PLAYERS. ONE VERY UNSTABLE ARENA.")
+	var is_single_player_match := _panel_return == "pause" and _active_single_player
+	var subtitle := "PLAYER VS CPU. ONE VERY UNSTABLE ARENA." if is_single_player_match else "TWO PLAYERS. ONE VERY UNSTABLE ARENA."
+	var panel := _create_panel("CONTROLS", subtitle)
 	_add_control_row(panel, "PLAYER 1", "A", Color("60a5fa"))
-	_add_control_row(panel, "PLAYER 2", "L  /  LEFT ARROW", Color("f87171"))
+	if is_single_player_match:
+		_add_control_row(panel, "CPU OPPONENT", "AUTOMATIC", Color("f87171"))
+	else:
+		_add_control_row(panel, "PLAYER 2", "L  /  LEFT ARROW", Color("f87171"))
 	_add_control_row(panel, "PAUSE / RESUME", "ESC", ACCENT_COLOR)
 	_add_body_label(panel, "Firing launches a bullet and kicks your gun in the opposite direction.")
-	_add_body_label(panel, "Mobile: tap anywhere on the left half to fire Player 1, or the right half to fire Player 2. Both sides support simultaneous touches.")
+	if is_single_player_match:
+		_add_body_label(panel, "Mobile: tap anywhere on the left half to fire. The CPU controls the red gun automatically.")
+	else:
+		_add_body_label(panel, "Mobile: tap anywhere on the left half to fire Player 1, or the right half to fire Player 2. Both sides support simultaneous touches.")
 	_add_body_label(panel, "Land three hits to eliminate your opponent. Your own bullets can never hurt you.")
 	var back_action: Callable = Callable(self, "_show_main_menu") if _panel_return == "main" else Callable(self, "_show_pause_menu")
 	_add_menu_button(panel, "BACK", back_action, true)

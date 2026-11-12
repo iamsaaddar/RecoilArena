@@ -17,6 +17,7 @@ const GUN_SCENE := preload("res://scenes/player/Gun.tscn")
 const BULLET_SCENE := preload("res://scenes/projectiles/Bullet.tscn")
 const HIT_SPARK_SCENE := preload("res://scenes/effects/HitSpark.tscn")
 const HEALTH_HUD_SCRIPT := preload("res://scripts/systems/HealthHUD.gd")
+const CPU_CONTROLLER_SCRIPT := preload("res://scripts/ai/CPUController.gd")
 const GUN_FIRE_SOUND := preload("res://assets/audio/gun_fire.wav")
 const WALL_BOUNCE_SOUND := preload("res://assets/audio/wall_bounce.wav")
 const HIT_IMPACT_SOUND := preload("res://assets/audio/hit_impact.wav")
@@ -27,6 +28,9 @@ var _projectiles: Node2D
 var _health_hud: HealthHUD
 var _camera: Camera2D
 var _guns: Array[ArenaGun] = []
+## Set before adding this Arena to the scene tree to replace Player 2 with the CPU.
+@export var single_player_mode := false
+var _cpu_controller: CPUController
 var _round_over := false
 var _round_transitioning := false
 var _shake_time := 0.0
@@ -53,6 +57,8 @@ func _ready() -> void:
 	_health_hud.play_again_requested.connect(_on_play_again_requested)
 	_spawn_player(1, Vector2(360.0, 360.0), 0.0, Color("3b82f6"), &"player_1_shoot")
 	_spawn_player(2, Vector2(920.0, 360.0), 180.0, Color("ef4444"), &"player_2_shoot")
+	if single_player_mode:
+		_start_cpu_opponent()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -143,6 +149,27 @@ func _spawn_player(
 	_guns.append(gun)
 
 
+func _start_cpu_opponent() -> void:
+	var human_gun := _get_gun_by_player_id(1)
+	var cpu_gun := _get_gun_by_player_id(2)
+	if not is_instance_valid(human_gun) or not is_instance_valid(cpu_gun):
+		push_error("Cannot start CPU opponent: both player guns must be spawned first.")
+		return
+
+	cpu_gun.human_input_enabled = false
+	_cpu_controller = CPU_CONTROLLER_SCRIPT.new() as CPUController
+	_cpu_controller.name = "CPUController"
+	add_child(_cpu_controller)
+	_cpu_controller.setup(cpu_gun, human_gun)
+
+
+func _get_gun_by_player_id(player_id: int) -> ArenaGun:
+	for gun in _guns:
+		if is_instance_valid(gun) and gun.player_id == player_id:
+			return gun
+	return null
+
+
 func _on_shot_requested(gun: ArenaGun, muzzle_position: Vector2, shot_direction: Vector2) -> void:
 	_play_sound(GUN_FIRE_SOUND, muzzle_position, -2.0)
 	var bullet := BULLET_SCENE.instantiate() as ArenaBullet
@@ -204,6 +231,8 @@ func _end_round(winner_id: int) -> void:
 	if _round_over:
 		return
 	_round_over = true
+	if is_instance_valid(_cpu_controller):
+		_cpu_controller.set_controller_active(false)
 	for gun in _guns:
 		if is_instance_valid(gun):
 			gun.set_round_locked(true)
@@ -240,6 +269,8 @@ func _start_next_round() -> void:
 	_health_hud.reset_health()
 	_round_over = false
 	_round_transitioning = false
+	if is_instance_valid(_cpu_controller):
+		_cpu_controller.reset_controller()
 	_health_hud.hide_round_overlay()
 	print("ROUND START")
 
