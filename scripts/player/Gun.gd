@@ -10,6 +10,7 @@ signal gun_collision(impact_strength: float, impact_position: Vector2)
 @export var fire_action: StringName = &"player_1_shoot"
 @export var gun_color: Color = Color("3b82f6")
 @export_range(0.0, 360.0, 1.0) var starting_rotation_degrees: float = 0.0
+@export var human_input_enabled := true
 
 const GRAVITY := 35.0
 const AIR_DRAG := 0.995
@@ -35,6 +36,8 @@ var _base_spin := 0.8
 var _rng := RandomNumberGenerator.new()
 var _muzzle_flash_time := 0.0
 var _collision_sound_cooldown := 0.0
+var _external_aim_target := Vector2.ZERO
+var _has_external_aim_target := false
 
 
 func _ready() -> void:
@@ -54,7 +57,7 @@ func _process(delta: float) -> void:
 	if _muzzle_flash_time > 0.0:
 		_muzzle_flash_time = maxf(0.0, _muzzle_flash_time - delta)
 		queue_redraw()
-	if not is_eliminated and not _round_locked and not fire_action.is_empty() and Input.is_action_just_pressed(fire_action):
+	if human_input_enabled and not is_eliminated and not _round_locked and not fire_action.is_empty() and Input.is_action_just_pressed(fire_action):
 		_try_fire()
 
 
@@ -71,6 +74,11 @@ func _physics_process(delta: float) -> void:
 	_angular_velocity *= ANGULAR_DRAG
 	if absf(_angular_velocity) < 0.3:
 		_angular_velocity += _base_spin * dt * 2.0
+	if _has_external_aim_target:
+		var desired_angle := global_position.direction_to(_external_aim_target).angle()
+		var angle_error := wrapf(desired_angle - global_rotation, -PI, PI)
+		var desired_angular_velocity := clampf(angle_error * 6.0, -7.0, 7.0)
+		_angular_velocity = move_toward(_angular_velocity, desired_angular_velocity, 14.0 * dt)
 	global_position += _velocity * dt
 	_resolve_arena_bounds()
 	# Player 2 is spawned after Player 1, so both guns have completed their
@@ -151,9 +159,28 @@ func _try_fire() -> void:
 
 
 func request_touch_fire() -> void:
+	if not human_input_enabled:
+		return
+	request_fire()
+
+
+## Public firing entry point for non-keyboard controllers such as the CPU.
+## It deliberately uses the same recoil, muzzle flash, and projectile signal as player input.
+func request_fire() -> void:
 	if _round_locked or is_eliminated:
 		return
 	_try_fire()
+
+
+## Let an external controller steer the gun toward a world-space position.
+## The existing angular inertia and spin remain active, so aiming still feels physical.
+func set_external_aim_target(target_position: Vector2) -> void:
+	_external_aim_target = target_position
+	_has_external_aim_target = true
+
+
+func clear_external_aim_target() -> void:
+	_has_external_aim_target = false
 
 
 func receive_hit(impact_direction: Vector2) -> void:
@@ -187,6 +214,7 @@ func set_round_locked(locked: bool) -> void:
 func reset_for_round(spawn_position: Vector2, start_angle_degrees: float) -> void:
 	hit_count = 0
 	is_eliminated = false
+	_has_external_aim_target = false
 	_velocity = Vector2.ZERO
 	_angular_velocity = 0.0
 	global_position = spawn_position
