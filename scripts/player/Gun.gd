@@ -183,6 +183,19 @@ func clear_external_aim_target() -> void:
 	_has_external_aim_target = false
 
 
+## Expose current recoil-driven movement to the CPU's projectile prediction.
+func get_ai_motion_velocity() -> Vector2:
+	return _velocity
+
+
+## Apply a bounded lateral impulse without bypassing the gun's existing physics.
+func apply_ai_dodge_impulse(direction: Vector2, impulse_strength: float) -> void:
+	if is_eliminated or _round_locked or direction.is_zero_approx():
+		return
+	_velocity += direction.normalized() * impulse_strength
+	_velocity = _velocity.limit_length(560.0)
+
+
 func receive_hit(impact_direction: Vector2) -> void:
 	if is_eliminated:
 		return

@@ -160,7 +160,7 @@ func _start_cpu_opponent() -> void:
 	_cpu_controller = CPU_CONTROLLER_SCRIPT.new() as CPUController
 	_cpu_controller.name = "CPUController"
 	add_child(_cpu_controller)
-	_cpu_controller.setup(cpu_gun, human_gun)
+	_cpu_controller.setup(cpu_gun, human_gun, _projectiles)
 
 
 func _get_gun_by_player_id(player_id: int) -> ArenaGun:
