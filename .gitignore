@@ -1,5 +1,6 @@
 # Godot generated files
 .godot/
+assets/Screenshots/*.import
 
 # Exported builds
 /builds/

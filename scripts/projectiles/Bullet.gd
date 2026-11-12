@@ -7,10 +7,10 @@ signal wall_bounced(impact_position: Vector2)
 
 @export var speed := 720.0
 @export var bullet_color := Color("3b82f6")
+@export var projectile_radius := 5.0
+@export var projectile_style := "pulse_blaster"
 
-const RADIUS := 5.0
 const TRAIL_POINTS := 10
-const TRAIL_WIDTH := RADIUS * 1.5
 const ARENA_MIN := Vector2(132.0, 82.0)
 const ARENA_MAX := Vector2(1148.0, 638.0)
 
@@ -24,6 +24,11 @@ func setup(owner_gun: ArenaGun, spawn_position: Vector2, direction: Vector2) -> 
 	shooter = owner_gun
 	global_position = spawn_position
 	velocity = direction.normalized() * speed
+	var collision_shape := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if is_instance_valid(collision_shape) and collision_shape.shape is CircleShape2D:
+		var circle := (collision_shape.shape as CircleShape2D).duplicate() as CircleShape2D
+		circle.radius = projectile_radius
+		collision_shape.shape = circle
 	if is_instance_valid(shooter):
 		add_collision_exception_with(shooter)
 
@@ -60,8 +65,8 @@ func _physics_process(delta: float) -> void:
 
 func _resolve_arena_bounds() -> void:
 	# Keep the projectile's full collision circle inside the arena's inner wall edges.
-	var min_position := ARENA_MIN + Vector2.ONE * RADIUS
-	var max_position := ARENA_MAX - Vector2.ONE * RADIUS
+	var min_position := ARENA_MIN + Vector2.ONE * projectile_radius
+	var max_position := ARENA_MAX - Vector2.ONE * projectile_radius
 	var hit_horizontal_bound := global_position.x < min_position.x or global_position.x > max_position.x
 	var hit_vertical_bound := global_position.y < min_position.y or global_position.y > max_position.y
 	if not hit_horizontal_bound and not hit_vertical_bound:
@@ -96,12 +101,23 @@ func _draw() -> void:
 		var trail_points := PackedVector2Array()
 		for world_position in _trail_positions:
 			trail_points.append(to_local(world_position))
-		draw_polyline(trail_points, Color(bullet_color, 0.4), TRAIL_WIDTH, true)
+		draw_polyline(trail_points, Color(bullet_color, 0.4), projectile_radius * 1.5, true)
 
-	# Bright white-hot core with the player's color inside, like the HTML glow.
-	draw_circle(Vector2.ZERO, RADIUS + 6.0, Color(bullet_color, 0.12))
-	draw_circle(Vector2.ZERO, RADIUS, Color.WHITE)
-	draw_circle(Vector2.ZERO, RADIUS * 0.7, bullet_color)
+	# Keep each class recognizable even when projectiles cross at high speed.
+	draw_circle(Vector2.ZERO, projectile_radius + 6.0, Color(bullet_color, 0.12))
+	match projectile_style:
+		"heavy_cannon":
+			draw_colored_polygon(PackedVector2Array([Vector2(-projectile_radius, -projectile_radius * 0.65), Vector2(projectile_radius, -projectile_radius * 0.65), Vector2(projectile_radius * 1.3, 0.0), Vector2(projectile_radius, projectile_radius * 0.65), Vector2(-projectile_radius, projectile_radius * 0.65)]), Color.WHITE)
+			draw_circle(Vector2.ZERO, projectile_radius * 0.58, bullet_color)
+		"rapid_blaster":
+			draw_rect(Rect2(-projectile_radius * 1.5, -projectile_radius * 0.5, projectile_radius * 3.0, projectile_radius), Color.WHITE)
+			draw_rect(Rect2(-projectile_radius, -projectile_radius * 0.28, projectile_radius * 2.0, projectile_radius * 0.56), bullet_color)
+		"railgun":
+			draw_colored_polygon(PackedVector2Array([Vector2(-projectile_radius * 2.0, -projectile_radius * 0.5), Vector2(projectile_radius, -projectile_radius * 0.5), Vector2(projectile_radius * 2.0, 0.0), Vector2(projectile_radius, projectile_radius * 0.5), Vector2(-projectile_radius * 2.0, projectile_radius * 0.5)]), Color.WHITE)
+			draw_line(Vector2(-projectile_radius, 0.0), Vector2(projectile_radius, 0.0), bullet_color, 2.0)
+		_:
+			draw_circle(Vector2.ZERO, projectile_radius, Color.WHITE)
+			draw_circle(Vector2.ZERO, projectile_radius * 0.7, bullet_color)
 
 
 func _finish() -> void:
